@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIdol Team Bridge</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#ebebea;
+  --text:#1a1a1a;--text2:#6b7280;--border:#e5e5e3;--border2:#d1d5db;
+  --accent:#378ADD;--danger:#dc2626;--danger-bg:#fef2f2;
+  --warning:#d97706;--warning-bg:#fffbeb;
+  --info:#2563eb;--info-bg:#eff6ff;
+  --success:#16a34a;--success-bg:#f0fdf4;
+  --radius:8px;--radius-lg:12px
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111113;--bg2:#1a1a1d;--bg3:#222226;
+  --text:#f0f0ee;--text2:#9ca3af;--border:#2a2a2e;--border2:#3a3a3e;
+  --danger-bg:#2d1515;--warning-bg:#2d2010;--info-bg:#0f1d35;--success-bg:#0d2410
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* NAV */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;background:var(--bg2);border-bottom:0.5px solid var(--border);position:sticky;top:0;z-index:100;gap:8px;flex-wrap:wrap}
+.app-title{font-size:13px;font-weight:700}
+.app-sub{font-size:10px;color:var(--text2)}
+.lang-switch{display:flex;gap:4px}
+.lang-btn{padding:3px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s}
+.lang-btn.active{background:var(--text);color:var(--bg);border-color:transparent}
+.saved-flash{font-size:10px;color:var(--success);opacity:0;transition:opacity .3s;white-space:nowrap}
+.saved-flash.show{opacity:1}
+
+/* TABS */
+.tabbar{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg2);overflow-x:auto;position:sticky;top:43px;z-index:99}
+.tab{padding:9px 15px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+.tab:hover:not(.active){color:var(--text)}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;border-radius:8px;font-size:9px;font-weight:700;padding:0 3px;margin-left:4px;background:var(--danger-bg);color:var(--danger)}
+
+/* PANELS */
+.panel{display:none;padding:14px;flex-direction:column;gap:11px;max-width:1300px;margin:0 auto}
+.panel.active{display:flex}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--bg2);border-radius:var(--radius);padding:10px 12px;border:0.5px solid var(--border)}
+.stat-lbl{font-size:10px;color:var(--text2);margin-bottom:3px}
+.stat-val{font-size:20px;font-weight:600}
+
+/* CARDS */
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.card-hd{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.edit-hint{font-size:10px;color:var(--text2);font-weight:400;background:var(--bg2);padding:2px 8px;border-radius:10px;border:0.5px solid var(--border)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{font-size:10px;font-weight:600;color:var(--text2);text-align:left;padding:5px 8px;border-bottom:0.5px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em;background:var(--bg2);position:sticky;top:0}
+.tbl td{padding:7px 8px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg2)}
+
+/* INLINE EDIT */
+.editable{cursor:text;border-radius:4px;transition:background .12s;min-width:30px;outline:none}
+.editable:hover{background:var(--bg2)}
+.editable:focus{background:var(--info-bg);outline:2px solid var(--accent);outline-offset:1px}
+.editable:empty:before{content:attr(data-ph);color:var(--text2);font-style:italic;pointer-events:none}
+.isel{border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text);cursor:pointer;border-radius:4px;padding:1px 2px;outline:none;max-width:130px}
+.isel:hover{background:var(--bg2)}
+.isel:focus{background:var(--info-bg);outline:2px solid var(--accent);outline-offset:1px}
+
+/* DATE INPUT */
+.date-input{border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text);cursor:pointer;border-radius:4px;padding:1px 4px;outline:none;max-width:120px}
+.date-input:hover{background:var(--bg2)}
+.date-input:focus{background:var(--info-bg);outline:2px solid var(--accent);outline-offset:1px}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.p-crit{background:var(--danger-bg);color:var(--danger)}
+.p-high{background:var(--warning-bg);color:var(--warning)}
+.p-med{background:var(--info-bg);color:var(--info)}
+.p-low{background:var(--bg2);color:var(--text2)}
+.p-todo{background:var(--danger-bg);color:var(--danger)}
+.p-prog{background:var(--info-bg);color:var(--info)}
+.p-done{background:var(--success-bg);color:var(--success)}
+.p-wait{background:var(--warning-bg);color:var(--warning)}
+
+/* WAIT DOT */
+.wdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wdot-d{background:var(--danger)}.wdot-w{background:var(--warning)}
+
+/* ADD / DEL */
+.add-row-btn{width:100%;padding:7px;font-size:11px;color:var(--text2);border:0.5px dashed var(--border2);background:transparent;border-radius:var(--radius);cursor:pointer;transition:all .15s;margin-top:6px;text-align:center}
+.add-row-btn:hover{background:var(--bg2);color:var(--text);border-color:var(--accent)}
+.del-btn{font-size:11px;color:var(--text2);border:none;background:transparent;cursor:pointer;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .15s}
+tr:hover .del-btn{opacity:1}
+.del-btn:hover{color:var(--danger);background:var(--danger-bg)}
+
+/* MATRIX */
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mx-cell{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;min-height:70px}
+.mx-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+.deal-row{font-size:12px;padding:4px 0;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:5px}
+.deal-row:last-child{border-bottom:none}
+
+/* GANTT */
+.gantt-wrap{overflow-x:auto}
+.gantt-sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--success);background:var(--success-bg);padding:3px 10px;border-radius:20px;border:0.5px solid var(--success);font-weight:600}
+.gantt-sync-badge.syncing{color:var(--warning);background:var(--warning-bg);border-color:var(--warning)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.syncing-dot{animation:blink .8s infinite}
+
+/* TRANSLATOR */
+.tl-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}
+@media(max-width:580px){.tl-grid{grid-template-columns:1fr}}
+.tl-box{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px;font-size:12px;line-height:1.7;min-height:80px;white-space:pre-wrap}
+.tl-box.empty{color:var(--text2);font-style:italic}
+.lbl-sm{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+
+/* BRIDGE FORM */
+.flabel{font-size:11px;color:var(--text2);margin-bottom:3px;display:block;font-weight:500}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+textarea,select.fsel,input.finput{width:100%;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--bg);outline:none;resize:vertical;transition:border-color .15s}
+textarea:focus,select.fsel:focus,input.finput:focus{border-color:var(--accent)}
+.btn{padding:6px 14px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text);transition:all .15s}
+.btn:hover{background:var(--bg2)}.btn:active{transform:scale(.98)}
+.btn-p{background:var(--text);color:var(--bg);border-color:transparent}.btn-p:hover{opacity:.85}
+.btn-sm{padding:3px 9px;font-size:11px}
+.actions{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+.hidden{display:none}
+.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SLACK */
+.slack-wrap{background:var(--bg2);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column;gap:9px;border:0.5px solid var(--border)}
+.slack-msg{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+.slack-hdr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.s-avatar{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.s-name{font-size:12px;font-weight:600}.s-time{font-size:10px;color:var(--text2);margin-left:3px}
+.s-body{font-size:12px;line-height:1.6}
+.s-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:500;margin-top:7px;cursor:pointer;border:0.5px solid var(--border2);background:var(--bg2);margin-right:5px}
+.s-badge:hover{background:var(--bg3)}
+.s-div{font-size:10px;color:var(--text2);text-align:center;padding:3px 0;display:flex;align-items:center;gap:7px}
+.s-div::before,.s-div::after{content:'';flex:1;height:0.5px;background:var(--border)}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div><div class="app-title">AIdol Team Bridge</div><div class="app-sub">Engineering × Sales × CEO</div></div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span class="saved-flash" id="saved-flash">✓ 保存済み</span>
+    <!-- SAVE/LOAD/SHARE BUTTONS -->
+    <button onclick="saveToLocal()" style="padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'" id="btn-save-local" title="このブラウザに保存">💾 保存</button>
+    <button onclick="exportJSON()" style="padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'" id="btn-export" title="JSONファイルでエクスポート（チームに共有）">📤 共有用エクスポート</button>
+    <button onclick="document.getElementById('import-input').click()" style="padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'" id="btn-import" title="JSONファイルをインポート">📥 インポート</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(this)">
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('ja',this)">🇯🇵 日本語</button>
+      <button class="lang-btn" onclick="setLang('en',this)">🇺🇸 English</button>
+    </div>
+  </div>
+</div>
+<div class="tabbar" id="tabbar"></div>
+
+<!-- BRIDGE -->
+<div class="panel active" id="panel-bridge">
+  <div class="stats">
+    <div class="stat"><div class="stat-lbl" id="sl-eng">Eng待ち</div><div class="stat-val" style="color:var(--danger)" id="s-eng">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="sl-sales">営業待ち</div><div class="stat-val" style="color:var(--warning)" id="s-sales">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="sl-due">今日の締切</div><div class="stat-val" style="color:var(--danger)">1</div></div>
+    <div class="stat"><div class="stat-lbl" id="sl-res">解決済(今週)</div><div class="stat-val" style="color:var(--success)">4</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <span id="bridge-card-title">待ちステータス一覧</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="edit-hint" id="bridge-edit-hint">セルをクリックで編集</span>
+        <button class="btn btn-sm btn-p" onclick="openNewReq()" id="bridge-add-btn">＋ リクエスト</button>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead id="bridge-head"></thead><tbody id="bridge-tbody"></tbody></table></div>
+    <button class="add-row-btn" id="bridge-add-row-btn" onclick="addBridgeRow()">＋ 行を追加</button>
+  </div>
+  <div class="card hidden" id="new-req-form">
+    <div class="card-hd"><span id="new-req-label">新しいリクエストを送る</span></div>
+    <div class="row2">
+      <div><span class="flabel" id="lbl-from">あなたは？</span><select class="fsel" id="req-from"><option value="sales-jp">🇯🇵 営業（日本語）</option><option value="eng-us">🇺🇸 Eng（English）</option></select></div>
+      <div><span class="flabel" id="lbl-prio">緊急度</span><select class="fsel" id="req-prio"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+    </div>
+    <div style="margin-bottom:8px"><span class="flabel" id="lbl-subj">件名</span><input class="finput" type="text" id="req-title"></div>
+    <div style="margin-bottom:8px"><span class="flabel" id="lbl-msg">メッセージ（自分の言語でOK）</span><textarea id="req-body" rows="3"></textarea></div>
+    <div class="row2" style="margin-bottom:8px">
+      <div><span class="flabel" id="lbl-to">宛先</span><select class="fsel" id="req-to"><option value="eng-us">🇺🇸 Eng（English）</option><option value="sales-jp">🇯🇵 営業（日本語）</option></select></div>
+      <div><span class="flabel" id="lbl-issue">関連Issue</span><input class="finput" type="text" id="req-client" placeholder="例: D001"></div>
+    </div>
+    <div id="tl-preview-wrap" class="hidden" style="margin-bottom:8px">
+      <span class="flabel" id="lbl-tl-prev">翻訳プレビュー</span>
+      <div class="tl-box" id="tl-preview-box"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="translateReq()"><span id="req-tl-spin" class="spinner hidden"></span><span id="btn-tl-prev">翻訳して確認</span></button>
+      <button class="btn" onclick="cancelReq()" id="btn-cancel">キャンセル</button>
+      <button class="btn btn-p" onclick="submitReq()" id="btn-submit">送信する</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEBUG -->
+<div class="panel" id="panel-debug">
+  <div class="stats">
+    <div class="stat"><div class="stat-lbl" id="dl-todo">TODO未</div><div class="stat-val" style="color:var(--danger)" id="d-todo">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-prog">進行中</div><div class="stat-val" style="color:var(--info)" id="d-prog">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-high">High Priority</div><div class="stat-val" style="color:var(--danger)" id="d-high">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-done">解決済み</div><div class="stat-val" style="color:var(--success)" id="d-done">0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <span id="debug-card-title">バグトラッカー</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input class="finput" style="width:150px;padding:4px 9px;font-size:11px" id="debug-search" oninput="renderDebug()" placeholder="検索…">
+        <select class="fsel" id="dbf-st" onchange="renderDebug()" style="border:0.5px solid var(--border2);padding:4px 8px;border-radius:var(--radius)"></select>
+        <select class="fsel" id="dbf-pr" onchange="renderDebug()" style="border:0.5px solid var(--border2);padding:4px 8px;border-radius:var(--radius)"></select>
+        <span class="edit-hint" id="debug-edit-hint">期日を入れるとガントに自動反映</span>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead id="debug-head"></thead><tbody id="debug-tbody"></tbody></table></div>
+    <button class="add-row-btn" id="debug-add-row-btn" onclick="addDebugRow()">＋ バグ行を追加</button>
+  </div>
+</div>
+
+<!-- DEALS -->
+<div class="panel" id="panel-deals">
+  <div class="stats">
+    <div class="stat"><div class="stat-lbl" id="dl-clients">クライアント数</div><div class="stat-val" style="color:var(--accent)" id="d-clients">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-urgent">緊急対応</div><div class="stat-val" style="color:var(--danger)" id="d-urgent">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-eng-ng">Eng未確認</div><div class="stat-val" style="color:var(--warning)" id="d-eng-ng">0</div></div>
+    <div class="stat"><div class="stat-lbl" id="dl-gantt-sync">ガント連動</div><div class="stat-val" style="color:var(--success)" id="d-gantt-sync">0</div></div>
+  </div>
+  <div style="font-size:11px;color:var(--text2)" id="matrix-hint">緊急度 × 規模マトリクス</div>
+  <div class="matrix">
+    <div class="mx-cell"><div class="mx-title" style="color:var(--danger)" id="mx-t-uh">🔴 今すぐ対応</div><div id="mx-uh"></div></div>
+    <div class="mx-cell"><div class="mx-title" style="color:var(--warning)" id="mx-t-ul">🟡 計画的に対応</div><div id="mx-ul"></div></div>
+    <div class="mx-cell"><div class="mx-title" style="color:var(--info)" id="mx-t-lh">🔵 チームに委任</div><div id="mx-lh"></div></div>
+    <div class="mx-cell"><div class="mx-title" style="color:var(--text2)" id="mx-t-ll">⚪ 後回しOK</div><div id="mx-ll"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <span id="deals-card-title">全案件リスト</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="edit-hint" id="deals-edit-hint">開始日・終了日を入れるとガントに自動反映 📅</span>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead id="deals-head"></thead><tbody id="deals-tbody"></tbody></table></div>
+    <button class="add-row-btn" id="deals-add-row-btn" onclick="addDealRow()">＋ 案件を追加</button>
+  </div>
+</div>
+
+<!-- GANTT -->
+<div class="panel" id="panel-gantt">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:14px;font-weight:600" id="gantt-main-title">自動生成ガントチャート</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px" id="gantt-sub">案件優先度・デバッグのデータから自動生成されます</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="gantt-sync-badge" id="gantt-sync-badge">✓ データ同期済み</div>
+      <select class="fsel" id="gantt-filter" onchange="renderGantt()" style="border:0.5px solid var(--border2);padding:4px 8px;border-radius:var(--radius)"></select>
+    </div>
+  </div>
+
+  <!-- GANTT CHART -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="gantt-wrap" id="gantt-container"></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text2);align-items:center">
+    <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#378ADD;margin-right:3px;vertical-align:middle"></span><span id="leg-deal">案件フェーズ</span></span>
+    <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#dc2626;margin-right:3px;vertical-align:middle"></span><span id="leg-bug-high">バグ対応 (High)</span></span>
+    <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#d97706;margin-right:3px;vertical-align:middle"></span><span id="leg-bug-mid">バグ対応 (Mid)</span></span>
+    <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1D9E75;margin-right:3px;vertical-align:middle"></span><span id="leg-done">完了</span></span>
+    <span><span style="color:var(--danger);font-weight:700">|</span> <span id="leg-today">今日</span></span>
+  </div>
+
+  <!-- SOURCE INFO -->
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:6px"><span id="gantt-src-title">データソース（編集は各タブから）</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px" id="gantt-source-info"></div>
+  </div>
+</div>
+
+<!-- TRANSLATE -->
+<div class="panel" id="panel-translate">
+  <div class="card">
+    <div class="card-hd"><span id="tl-main-title">日英リアルタイム翻訳</span></div>
+    <div class="tl-grid">
+      <div><div class="lbl-sm" id="tl-from-lbl">日本語</div><textarea id="tl-input" rows="5" oninput="clearTlOut()"></textarea></div>
+      <div style="padding-top:22px"><button class="btn" style="font-size:15px;padding:4px 8px" onclick="swapTl()">⇄</button></div>
+      <div><div class="lbl-sm" id="tl-to-lbl">English</div><div class="tl-box empty" id="tl-output">翻訳結果がここに表示されます…</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="clearTl()" id="btn-clear">クリア</button>
+      <button class="btn btn-p" onclick="runTl()"><span id="tl-spin" class="spinner hidden"></span><span id="btn-translate">翻訳する</span></button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:7px" id="tl-tip">💡 Debug SheetのBUGREQやDTLの内容をそのまま貼り付けてください</div>
+  </div>
+  <div class="card"><div class="card-hd"><span id="tl-hist-title">翻訳履歴</span></div><div id="tl-history"><div style="font-size:12px;color:var(--text2)">翻訳履歴なし</div></div></div>
+  <div class="card">
+    <div class="card-hd"><span id="slack-title">Slack通知イメージ</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:9px" id="slack-sub">このアプリからSlackに自動通知するとこんなイメージです</div>
+    <div class="slack-wrap">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px">#aidol-eng-alerts</div>
+      <div class="slack-msg">
+        <div class="slack-hdr"><div class="s-avatar" style="background:var(--danger-bg)">🤖</div><span class="s-name">AIdol Bridge Bot</span><span class="s-time">Today 9:41 AM</span></div>
+        <div class="s-body"><strong>🔴 [D001] Critical — Subtitle timing unstable</strong><br><span style="color:var(--text2)">Owner:</span> Jia &nbsp;|&nbsp; <span style="color:var(--text2)">Deadline:</span> 3/7<br><br><em>"Generation time fluctuates 2.8–4s. 'Output after 7s' setting not reflected."</em><div><span class="s-badge">📋 View in Bridge</span><span class="s-badge">✅ Resolve</span></div></div>
+      </div>
+      <div class="s-div">Daily digest · 9:00 AM</div>
+      <div class="slack-msg">
+        <div class="slack-hdr"><div class="s-avatar" style="background:var(--info-bg)">📊</div><span class="s-name">AIdol Bridge Bot</span><span class="s-time">Today 9:00 AM</span></div>
+        <div class="s-body"><strong>Good morning — AIdol status</strong><br><br>
+          <div style="display:flex;flex-direction:column;gap:4px;margin:5px 0">
+            <div style="display:flex;align-items:flex-start;gap:7px;padding:6px 9px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);font-size:12px"><div style="width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--danger-bg)">🐛</div><div><strong id="slack-bug-count">12 open bugs</strong> — 10 High, deadline 3/7</div></div>
+            <div style="display:flex;align-items:flex-start;gap:7px;padding:6px 9px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);font-size:12px"><div style="width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--warning-bg)">⏳</div><div><strong>Key:</strong> Subtitle timing, ASR double-count, WS reconnect</div></div>
+          </div>
+          <div><span class="s-badge">🔗 Open Team Bridge</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+let lang = 'ja';
+let tlSwapped = false;
+let tlHistory = [];
+
+let bridgeData = [
+  {id:'B001',title:{ja:'D001: 字幕タイミング不安定 — 至急確認を',en:'D001: Subtitle timing unstable — urgent'},from:'sales-jp',to:'eng-us',prio:'critical',status:'waiting',since:'2026-03-29'},
+  {id:'B002',title:{ja:'D005: WASAPI/MME Mic分離 — 技術的に可能か',en:'D005: WASAPI/MME Mic separation — feasible?'},from:'eng-us',to:'sales-jp',prio:'high',status:'waiting',since:'2026-03-30'},
+  {id:'B003',title:{ja:'D007: クラッシュ後のエラースクリーンショット要請',en:'D007: Error screenshot required after crash'},from:'eng-us',to:'sales-jp',prio:'high',status:'replied',since:'2026-03-28'},
+];
+
+// dealData: startDate / endDate drive Gantt automatically
+let dealData = [
+  {id:'P001',client:'Sony Music',name:{ja:'VTuberライブ字幕配信',en:'VTuber live subtitle streaming'},value:'24M',urgent:true,big:true,engOk:true,startDate:'2026-04-01',endDate:'2026-05-31',next:{ja:'デモ実施 4/3',en:'Demo April 3'}},
+  {id:'P002',client:'Fuji TV',name:{ja:'アニメ配信プラットフォーム連携',en:'Anime streaming platform integration'},value:'18M',urgent:true,big:true,engOk:false,startDate:'2026-04-01',endDate:'2026-06-30',next:{ja:'API仕様確認待ち',en:'Waiting on API spec'}},
+  {id:'P003',client:'Bandai Namco',name:{ja:'ゲーム実況リアルタイム翻訳',en:'Game streaming real-time translation'},value:'9M',urgent:false,big:true,engOk:true,startDate:'2026-04-08',endDate:'2026-06-15',next:{ja:'契約書ドラフト中',en:'Drafting contract'}},
+  {id:'P004',client:'dアニメストア',name:{ja:'字幕自動生成パイロット',en:'Auto-subtitle pilot'},value:'6M',urgent:true,big:false,engOk:false,startDate:'2026-04-15',endDate:'2026-06-30',next:{ja:'要件定義MTG設定',en:'Set up requirements MTG'}},
+  {id:'P005',client:'Cygames',name:{ja:'ゲームシナリオ翻訳API',en:'Game scenario translation API'},value:'4M',urgent:false,big:false,engOk:true,startDate:'',endDate:'',next:{ja:'フォローアップメール',en:'Follow-up email'}},
+];
+
+// debugData: dead (deadline) drives Gantt bug bars automatically
+let debugData = [
+  {id:'D001',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'字幕タイミング',en:'Subtitle Timing'},title:{ja:'字幕の出力タイミングが不安定',en:'Subtitle output timing unstable'},str:{ja:'1. Admin設定で遅延秒数を指定\n2. 音声入力\n3. 字幕出力タイミングを計測',en:'1. Set delay in Admin\n2. Provide audio input\n3. Measure subtitle timing'},er:{ja:'指定秒数通りに固定で字幕が表示される',en:'Subtitles displayed at fixed timing.'},nts:{ja:'ライブ配信では厳密なタイミング制御が不可欠',en:'Strict timing control essential for live streaming.'},own:'KIYU'},
+  {id:'D002',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'Admin→Viewer同期',en:'Admin→Viewer Sync'},title:{ja:'Adminでの変更がViewerに反映されない',en:'Admin changes not reflected in Viewer'},str:{ja:'1. Adminで背景色をGreenに変更\n2. Viewerを確認',en:'1. Change bg color to Green in Admin\n2. Check Viewer'},er:{ja:'ViewerにリアルタイムでReflectedされる',en:'Changes reflected in Viewer in real time.'},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D003',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'音声認識',en:'Speech Recognition'},title:{ja:'音声は認識されるが字幕テキストが表示されない',en:'Speech recognized but subtitle not displayed'},str:{ja:'1. Lチャンネルにマイク入力\n2. 日本語で話す\n3. 字幕表示を確認',en:'1. Input mic on L channel\n2. Speak Japanese\n3. Check subtitle display'},er:{ja:'日本語 or 英訳が正しく字幕に表示される',en:'JP or EN shown correctly.'},nts:{ja:'翻訳ワードセットの問題の可能性あり',en:'Possible wordset config issue.'},own:'KIYU'},
+  {id:'D004',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'音声認識',en:'Speech Recognition'},title:{ja:'1回の発話が複数回としてカウントされる',en:'Single utterance counted multiple times'},str:{ja:'1. 短い一言を1回発話\n2. 認識ログを確認',en:'1. Say a short phrase once\n2. Check recognition logs'},er:{ja:'1回の発話として1回のみ認識される',en:'Single utterance recognized once.'},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D005',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'音声チャンネル',en:'Audio Channels'},title:{ja:'Mic1とMic2を別々に取り込めない（WASAPI/MME）',en:'Cannot capture Mic1 & Mic2 separately'},str:{ja:'1. Scarlett 18i20をUSB接続\n2. WASAPI/MMEドライバで起動\n3. チャンネル割当を確認',en:'1. Connect Scarlett via USB\n2. Launch with WASAPI/MME\n3. Check channel assignment'},er:{ja:'Mic1・Mic2を独立したモノラルチャンネルとして認識',en:'Mic1 and Mic2 as independent mono channels.'},nts:{ja:'Single stereo deviceでL/R 2chは認識できた',en:'L/R recognized as 2ch via single stereo device.'},own:'KIYU'},
+  {id:'D006',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'音声チャンネル',en:'Audio Channels'},title:{ja:'Lチャンネル音声は認識されるが翻訳が表示されない',en:'L channel audio recognized but translation not shown'},str:{ja:'1. Lチャンネルのみ入力\n2. 音声認識ログ確認\n3. 字幕出力確認',en:'1. Input L channel only\n2. Check ASR logs\n3. Check subtitle output'},er:{ja:'Lチャンネル入力に対して翻訳字幕が表示される',en:'Translated subtitles shown for L channel input.'},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D007',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'起動',en:'Startup'},title:{ja:'システムクラッシュ後にソフトが起動しない',en:'Software fails to launch after crash/restart'},str:{ja:'1. クラッシュ後に再起動\n2. ソフトウェアを起動\n3. エラー内容を記録',en:'1. Reboot after crash\n2. Launch software\n3. Record error details'},er:{ja:'正常に起動できる',en:'Software launches normally.'},nts:{ja:'エラースクリーンショット確認が必要',en:'Need error screenshot.'},own:'KIYU'},
+  {id:'D008',prio:'high',pic:'Jia',dead:'2026-03-07',st:'todo',cat:{ja:'字幕ワードセット',en:'Subtitle Wordset'},title:{ja:'IP専門用語の翻訳精度が低い',en:'IP-specific terminology translation accuracy low'},str:{ja:'1. 音声入力\n2. ワードチェック「フルフル」\n3. word→furufuru',en:'1. Voice Input\n2. Word Check: Furufuru\n3. Word→Furufuru'},er:{ja:'ワードセットが適正に反映される',en:'Wordset correctly applied.'},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D009',prio:'mid',pic:'Jia',dead:'2026-03-14',st:'todo',cat:{ja:'設定保持',en:'Settings Persistence'},title:{ja:'プリセットの保存／読み込み機能が必要',en:'Preset save/load feature required'},str:{ja:'-',en:'-'},er:{ja:'プリセット一覧からワンクリックで設定切替',en:'Switch settings with one click from preset list.'},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D010',prio:'mid',pic:'Jia',dead:'2026-03-14',st:'todo',cat:{ja:'設定保持',en:'Settings Persistence'},title:{ja:'リフレッシュすると設定がリセットされる',en:'Settings reset on refresh'},str:{ja:'1. 各種設定を変更\n2. ページをリフレッシュ\n3. 設定値を確認',en:'1. Change settings\n2. Refresh page\n3. Confirm values'},er:{ja:'最後の設定が保持・自動ロードされる',en:'Last-used settings preserved and auto-loaded.'},nts:{ja:'設定プリセット機能も要望あり',en:'Preset feature also requested.'},own:'KIYU'},
+  {id:'D011',prio:'high',pic:'Jia',dead:'',st:'todo',cat:{ja:'字幕表示時間',en:'Display Time'},title:{ja:'最低表示時間を調整できる項目を追加',en:'Add option to adjust minimum display time'},str:{ja:'',en:''},er:{ja:'',en:''},nts:{ja:'',en:''},own:'KIYU'},
+  {id:'D012',prio:'',pic:'',dead:'',st:'todo',cat:{ja:'システム',en:'System'},title:{ja:'日本語・中国語の切り替え機能搭載',en:'Japanese/Chinese language switching function'},str:{ja:'',en:''},er:{ja:'',en:''},nts:{ja:'',en:''},own:''},
+];
+
+const CLIENT_COLORS = {'Sony Music':'#378ADD','Fuji TV':'#D85A30','Bandai Namco':'#1D9E75','dアニメストア':'#7F77DD','Cygames':'#BA7517'};
+
+// ============================================================
+// GANTT DATA BUILDER — derives from deals + debug
+// ============================================================
+const GANTT_ORIGIN = new Date('2026-04-01');
+
+function dateToWeek(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr);
+  return Math.round((d - GANTT_ORIGIN) / (7*86400000));
+}
+
+function buildGanttRows(){
+  const rows = [];
+
+  // 1. Deal rows — one bar per deal (startDate → endDate)
+  dealData.forEach(d => {
+    if(!d.startDate || !d.endDate) return;
+    const startW = dateToWeek(d.startDate);
+    const endW = dateToWeek(d.endDate);
+    if(startW === null || endW === null) return;
+    const dur = Math.max(1, endW - startW);
+    const cc = CLIENT_COLORS[d.client] || '#378ADD';
+    rows.push({
+      group: d.client,
+      label: d.name[lang] || d.client,
+      start: startW,
+      dur: dur,
+      color: cc,
+      type: 'deal',
+      engOk: d.engOk,
+      status: d.engOk ? 'ok' : 'pending',
+    });
+  });
+
+  // 2. Debug rows — group by deadline, show as bug fix bar (2 weeks wide)
+  const bugGroups = {};
+  debugData.forEach(d => {
+    if(!d.dead || d.st === 'resolved') return;
+    const key = d.dead + '__' + d.prio;
+    if(!bugGroups[key]) bugGroups[key] = {dead: d.dead, prio: d.prio, count: 0, cats: new Set()};
+    bugGroups[key].count++;
+    bugGroups[key].cats.add(d.cat[lang]);
+  });
+
+  Object.values(bugGroups).forEach(bg => {
+    const endW = dateToWeek(bg.dead);
+    if(endW === null) return;
+    const startW = Math.max(0, endW - 2);
+    const dur = Math.max(1, endW - startW);
+    const color = bg.prio === 'high' ? '#dc2626' : '#d97706';
+    const label = lang==='ja'
+      ? `バグ修正 (${bg.count}件) - ${[...bg.cats].slice(0,2).join('/')}`
+      : `Bug fixes (${bg.count}) - ${[...bg.cats].slice(0,2).join('/')}`;
+    rows.push({
+      group: lang==='ja' ? 'デバッグ対応' : 'Debug Fixes',
+      label,
+      start: startW,
+      dur,
+      color,
+      type: 'bug',
+      prio: bg.prio,
+      status: 'bug',
+    });
+  });
+
+  return rows;
+}
+
+// ============================================================
+// SYNC BADGE
+// ============================================================
+function flashSync(){
+  const badge = document.getElementById('gantt-sync-badge');
+  badge.classList.add('syncing');
+  badge.textContent = lang==='ja' ? '⟳ 同期中…' : '⟳ Syncing…';
+  setTimeout(()=>{
+    badge.classList.remove('syncing');
+    badge.textContent = lang==='ja' ? '✓ データ同期済み' : '✓ Synced';
+  }, 600);
+}
+
+// ============================================================
+// TABS
+// ============================================================
+const TABS_ID = ['bridge','debug','deals','gantt','translate'];
+const TABS_LABEL = {
+  ja: ['Bridge','デバッグ','案件優先度','ガントチャート','翻訳・Slack'],
+  en: ['Bridge','Bugs','Deals','Gantt Chart','Translate/Slack'],
+};
+
+function renderTabs(){
+  document.getElementById('tabbar').innerHTML = TABS_ID.map((id,i) => {
+    const active = document.getElementById('panel-'+id).classList.contains('active');
+    let badge = '';
+    if(id==='bridge') badge = `<span class="badge">${bridgeData.filter(b=>b.status==='waiting').length}</span>`;
+    if(id==='debug') badge = `<span class="badge">${debugData.filter(d=>d.st==='todo').length}</span>`;
+    return `<div class="tab${active?' active':''}" onclick="showTab('${id}')">${TABS_LABEL[lang][i]}${badge}</div>`;
+  }).join('');
+}
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='gantt'){ flashSync(); renderGantt(); }
+  renderTabs();
+}
+
+// ============================================================
+// SAVED FLASH
+// ============================================================
+function flashSave(){
+  const el = document.getElementById('saved-flash');
+  el.textContent = lang==='ja' ? '✓ 保存済み' : '✓ Saved';
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 2000);
+}
+
+// ============================================================
+// LANG
+// ============================================================
+function setLang(l, btn){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyI18n();
+  renderAll();
+}
+
+function applyI18n(){
+  const ja = lang==='ja';
+  // stats labels
+  document.getElementById('sl-eng').textContent = ja?'Eng待ち':'Waiting on Eng';
+  document.getElementById('sl-sales').textContent = ja?'営業待ち':'Waiting on Sales';
+  document.getElementById('sl-due').textContent = ja?'今日の締切':'Due today';
+  document.getElementById('sl-res').textContent = ja?'解決済(今週)':'Resolved (week)';
+  document.getElementById('dl-todo').textContent = ja?'TODO未':'TODO';
+  document.getElementById('dl-prog').textContent = ja?'進行中':'In progress';
+  document.getElementById('dl-high').textContent = 'High Priority';
+  document.getElementById('dl-done').textContent = ja?'解決済み':'Resolved';
+  document.getElementById('dl-clients').textContent = ja?'クライアント数':'Clients';
+  document.getElementById('dl-urgent').textContent = ja?'緊急対応':'Urgent';
+  document.getElementById('dl-eng-ng').textContent = ja?'Eng未確認':'Eng unconfirmed';
+  document.getElementById('dl-gantt-sync').textContent = ja?'ガント連動':'Gantt synced';
+  // card titles
+  document.getElementById('bridge-card-title').textContent = ja?'待ちステータス一覧':'Communication Status';
+  document.getElementById('bridge-edit-hint').textContent = ja?'セルをクリックで編集':'Click any cell to edit';
+  document.getElementById('bridge-add-btn').textContent = ja?'＋ リクエスト':'＋ Request';
+  document.getElementById('bridge-add-row-btn').textContent = ja?'＋ 行を追加':'＋ Add row';
+  document.getElementById('new-req-label').textContent = ja?'新しいリクエストを送る':'New Request';
+  document.getElementById('lbl-from').textContent = ja?'あなたは？':'You are';
+  document.getElementById('lbl-prio').textContent = ja?'緊急度':'Priority';
+  document.getElementById('lbl-subj').textContent = ja?'件名':'Subject';
+  document.getElementById('lbl-msg').textContent = ja?'メッセージ（自分の言語でOK）':'Message (your language is fine)';
+  document.getElementById('lbl-to').textContent = ja?'宛先':'To';
+  document.getElementById('lbl-issue').textContent = ja?'関連Issue':'Related Issue';
+  document.getElementById('lbl-tl-prev').textContent = ja?'翻訳プレビュー':'Translation preview';
+  document.getElementById('btn-tl-prev').textContent = ja?'翻訳して確認':'Translate & preview';
+  document.getElementById('btn-cancel').textContent = ja?'キャンセル':'Cancel';
+  document.getElementById('btn-submit').textContent = ja?'送信する':'Submit';
+  document.getElementById('debug-card-title').textContent = ja?'バグトラッカー（Debug Sheet）':'Bug Tracker (Debug Sheet)';
+  document.getElementById('debug-edit-hint').textContent = ja?'期日を入れるとガントに自動反映':'Enter deadline → auto-updates Gantt';
+  document.getElementById('debug-add-row-btn').textContent = ja?'＋ バグ行を追加':'＋ Add bug row';
+  document.getElementById('matrix-hint').textContent = ja?'緊急度 × 規模マトリクス':'Urgency × Scale matrix';
+  document.getElementById('mx-t-uh').textContent = ja?'🔴 今すぐ対応':'🔴 Act now';
+  document.getElementById('mx-t-ul').textContent = ja?'🟡 計画的に対応':'🟡 Plan ahead';
+  document.getElementById('mx-t-lh').textContent = ja?'🔵 チームに委任':'🔵 Delegate';
+  document.getElementById('mx-t-ll').textContent = ja?'⚪ 後回しOK':'⚪ Low priority';
+  document.getElementById('deals-card-title').textContent = ja?'全案件リスト':'All Deals';
+  document.getElementById('deals-edit-hint').textContent = ja?'開始日・終了日を入れるとガントに自動反映 📅':'Set start/end date → auto-updates Gantt 📅';
+  document.getElementById('deals-add-row-btn').textContent = ja?'＋ 案件を追加':'＋ Add deal';
+  document.getElementById('gantt-main-title').textContent = ja?'自動生成ガントチャート':'Auto-generated Gantt Chart';
+  document.getElementById('gantt-sub').textContent = ja?'案件優先度・デバッグのデータから自動生成されます':'Auto-generated from Deals & Debug data';
+  document.getElementById('gantt-sync-badge').textContent = ja?'✓ データ同期済み':'✓ Synced';
+  document.getElementById('leg-deal').textContent = ja?'案件フェーズ':'Deal phase';
+  document.getElementById('leg-bug-high').textContent = ja?'バグ対応 (High)':'Bug fix (High)';
+  document.getElementById('leg-bug-mid').textContent = ja?'バグ対応 (Mid)':'Bug fix (Mid)';
+  document.getElementById('leg-done').textContent = ja?'完了':'Done';
+  document.getElementById('leg-today').textContent = ja?'今日':'Today';
+  document.getElementById('gantt-src-title').textContent = ja?'データソース（編集は各タブから）':'Data source (edit in each tab)';
+  document.getElementById('tl-main-title').textContent = ja?'日英リアルタイム翻訳':'Real-time Translation (JA ↔ EN)';
+  document.getElementById('tl-from-lbl').textContent = tlSwapped?'English':(ja?'日本語':'Japanese');
+  document.getElementById('tl-to-lbl').textContent = tlSwapped?(ja?'日本語':'Japanese'):'English';
+  document.getElementById('btn-clear').textContent = ja?'クリア':'Clear';
+  document.getElementById('btn-translate').textContent = ja?'翻訳する':'Translate';
+  document.getElementById('tl-tip').textContent = ja?'💡 Debug SheetのBUGREQやDTLの内容をそのまま貼り付けてください':'💡 Paste BUGREQ or DTL content directly';
+  document.getElementById('tl-hist-title').textContent = ja?'翻訳履歴':'Translation history';
+  document.getElementById('slack-title').textContent = ja?'Slack通知イメージ':'Slack Notification Preview';
+  document.getElementById('slack-sub').textContent = ja?'このアプリからSlackに自動通知するとこんなイメージです':'How auto-notifications would appear in Slack';
+  renderTabs();
+}
+
+// ============================================================
+// INLINE EDIT HELPERS
+// ============================================================
+function edCell(text, onSave, multiline=false){
+  const td = document.createElement('td');
+  const div = document.createElement('div');
+  div.className = 'editable';
+  div.contentEditable = 'true';
+  div.setAttribute('data-ph','—');
+  div.innerHTML = (text||'').replace(/\n/g,'<br>');
+  div.addEventListener('blur',()=>{ onSave(div.innerText.trim()); flashSave(); });
+  div.addEventListener('keydown',e=>{ if(!multiline&&e.key==='Enter'){e.preventDefault();div.blur();} if(e.key==='Escape')div.blur(); });
+  td.appendChild(div);
+  return td;
+}
+
+function selCell(options, value, onChange){
+  const td = document.createElement('td');
+  const sel = document.createElement('select');
+  sel.className = 'isel';
+  options.forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; if(v===value)o.selected=true; sel.appendChild(o); });
+  sel.onchange = ()=>{ onChange(sel.value); flashSave(); };
+  td.appendChild(sel);
+  return td;
+}
+
+function dateCell(value, onChange){
+  const td = document.createElement('td');
+  const inp = document.createElement('input');
+  inp.type = 'date';
+  inp.className = 'date-input';
+  inp.value = value || '';
+  inp.onchange = ()=>{ onChange(inp.value); flashSave(); flashSync(); };
+  td.appendChild(inp);
+  return td;
+}
+
+function delCell(onDel){
+  const td = document.createElement('td');
+  const btn = document.createElement('button');
+  btn.className = 'del-btn'; btn.textContent = '✕';
+  btn.onclick = onDel;
+  td.appendChild(btn);
+  return td;
+}
+
+// ============================================================
+// BRIDGE
+// ============================================================
+function renderBridge(){
+  const ja = lang==='ja';
+  const waiting = bridgeData.filter(b=>b.status==='waiting');
+  document.getElementById('s-eng').textContent = waiting.filter(b=>b.to==='eng-us').length;
+  document.getElementById('s-sales').textContent = waiting.filter(b=>b.to==='sales-jp').length;
+  const heads = ja?['件名','送信者','宛先','優先度','待ち日数','ステータス','']:['Subject','From','To','Priority','Waiting','Status',''];
+  document.getElementById('bridge-head').innerHTML=`<tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+  const tbody = document.getElementById('bridge-tbody');
+  tbody.innerHTML = '';
+  bridgeData.forEach((b,i)=>{
+    const tr = document.createElement('tr');
+    tr.appendChild(edCell(b.title[lang]||'', v=>{b.title[lang]=v;}));
+    tr.appendChild(selCell([['sales-jp',ja?'🇯🇵 営業':'🇯🇵 Sales'],['eng-us','🇺🇸 Eng']], b.from, v=>{b.from=v;renderBridge();}));
+    tr.appendChild(selCell([['eng-us','🇺🇸 Eng'],['sales-jp',ja?'🇯🇵 営業':'🇯🇵 Sales']], b.to, v=>{b.to=v;renderBridge();}));
+    tr.appendChild(selCell([['critical','Critical'],['high','High'],['medium','Medium'],['low','Low']], b.prio, v=>{b.prio=v;}));
+    const days = Math.max(0,Math.floor((Date.now()-new Date(b.since))/86400000));
+    const daysTd = document.createElement('td');
+    daysTd.style.cssText='font-size:11px;color:var(--text2);white-space:nowrap';
+    if(b.status==='waiting') daysTd.innerHTML=`<span class="wdot ${days>=2?'wdot-d':'wdot-w'}"></span>`;
+    daysTd.innerHTML += days+(ja?'日':'d');
+    tr.appendChild(daysTd);
+    tr.appendChild(selCell([['waiting',ja?'返信待ち':'Awaiting'],['replied',ja?'対応済み':'Resolved']], b.status, v=>{b.status=v;renderBridge();}));
+    tr.appendChild(delCell(()=>{bridgeData.splice(i,1);renderBridge();renderTabs();}));
+    tbody.appendChild(tr);
+  });
+}
+function addBridgeRow(){bridgeData.push({id:'B'+Date.now(),title:{ja:'新しいリクエスト',en:'New request'},from:'sales-jp',to:'eng-us',prio:'medium',status:'waiting',since:new Date().toISOString().slice(0,10)});renderBridge();renderTabs();flashSave();}
+function openNewReq(){document.getElementById('new-req-form').classList.remove('hidden');document.getElementById('tl-preview-wrap').classList.add('hidden');}
+function cancelReq(){document.getElementById('new-req-form').classList.add('hidden');}
+async function translateReq(){
+  const body=document.getElementById('req-body').value.trim();if(!body)return;
+  const toLang=document.getElementById('req-from').value==='sales-jp'?'English':'Japanese';
+  document.getElementById('req-tl-spin').classList.remove('hidden');
+  const out=await callClaude(`Translate to ${toLang} for a tech startup. Output translation only:\n\n${body}`);
+  document.getElementById('req-tl-spin').classList.add('hidden');
+  document.getElementById('tl-preview-wrap').classList.remove('hidden');
+  document.getElementById('tl-preview-box').textContent=out;
+}
+function submitReq(){
+  const title=document.getElementById('req-title').value.trim();if(!title)return;
+  bridgeData.unshift({id:'B'+Date.now(),title:{ja:title,en:title},from:document.getElementById('req-from').value,to:document.getElementById('req-to').value,prio:document.getElementById('req-prio').value,status:'waiting',since:new Date().toISOString().slice(0,10)});
+  cancelReq();['req-title','req-body','req-client'].forEach(id=>document.getElementById(id).value='');
+  renderBridge();renderTabs();flashSave();
+}
+
+// ============================================================
+// DEBUG
+// ============================================================
+function buildDebugFilters(){
+  const ja=lang==='ja';
+  document.getElementById('dbf-st').innerHTML=[['','全ステータス/All'],['todo','TODO'],['in_progress',ja?'進行中':'In progress'],['review','Review'],['resolved',ja?'解決済み':'Resolved']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  document.getElementById('dbf-pr').innerHTML=[['','全優先度/All'],['high','High'],['mid','Mid']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+}
+
+function renderDebug(){
+  const ja=lang==='ja';
+  const q=(document.getElementById('debug-search').value||'').toLowerCase();
+  const stf=document.getElementById('dbf-st').value;
+  const prf=document.getElementById('dbf-pr').value;
+  const items=debugData.filter(d=>{
+    if(stf&&d.st!==stf)return false;
+    if(prf&&d.prio!==prf)return false;
+    if(q&&!d.title.ja.toLowerCase().includes(q)&&!d.title.en.toLowerCase().includes(q)&&!(d.cat[lang]||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  document.getElementById('d-todo').textContent=debugData.filter(d=>d.st==='todo').length;
+  document.getElementById('d-prog').textContent=debugData.filter(d=>d.st==='in_progress').length;
+  document.getElementById('d-high').textContent=debugData.filter(d=>d.prio==='high').length;
+  document.getElementById('d-done').textContent=debugData.filter(d=>d.st==='resolved').length;
+
+  const heads = ja?['ID','Prio','カテゴリ','バグ名','期日（ガント連動）','担当','ステータス','STR 再現手順','ER 期待動作','']:['ID','Prio','Category','Bug Title','Deadline (→Gantt)','Owner','Status','STR Steps','ER Expected',''];
+  document.getElementById('debug-head').innerHTML=`<tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+
+  const tbody=document.getElementById('debug-tbody');
+  tbody.innerHTML='';
+  const stOpts=[['todo','TODO'],['in_progress',ja?'進行中':'In progress'],['review','Review'],['resolved',ja?'解決済み':'Resolved']];
+  const prOpts=[['high','High'],['mid','Mid'],['','—']];
+
+  items.forEach(d=>{
+    const i=debugData.indexOf(d);
+    const tr=document.createElement('tr');
+    const idTd=document.createElement('td');
+    idTd.style.cssText='font-family:monospace;font-size:10px;color:var(--text2);white-space:nowrap';
+    idTd.textContent=d.id;
+    tr.appendChild(idTd);
+    tr.appendChild(selCell(prOpts, d.prio, v=>{debugData[i].prio=v;renderDebug();}));
+    tr.appendChild(edCell(d.cat[lang]||'', v=>{debugData[i].cat[lang]=v;}));
+    tr.appendChild(edCell(d.title[lang]||'', v=>{debugData[i].title[lang]=v;}));
+    // deadline — date input drives Gantt
+    tr.appendChild(dateCell(d.dead, v=>{
+      debugData[i].dead=v;
+      renderDebug();
+      // re-render gantt if visible
+      if(document.getElementById('panel-gantt').classList.contains('active')) renderGantt();
+    }));
+    tr.appendChild(edCell(d.pic||'', v=>{debugData[i].pic=v;}));
+    tr.appendChild(selCell(stOpts, d.st, v=>{debugData[i].st=v;renderDebug();renderTabs();if(document.getElementById('panel-gantt').classList.contains('active'))renderGantt();}));
+    tr.appendChild(edCell(d.str[lang]||'', v=>{debugData[i].str[lang]=v;},true));
+    tr.appendChild(edCell(d.er[lang]||'', v=>{debugData[i].er[lang]=v;},true));
+    tr.appendChild(delCell(()=>{debugData.splice(i,1);renderDebug();renderTabs();}));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('slack-bug-count').textContent=debugData.filter(d=>d.st==='todo').length+' open bugs';
+}
+function addDebugRow(){
+  debugData.push({id:'D'+(debugData.length+1).toString().padStart(3,'0'),prio:'high',pic:'',dead:'',st:'todo',cat:{ja:'その他',en:'Other'},title:{ja:'新しいバグ',en:'New bug'},str:{ja:'',en:''},er:{ja:'',en:''},nts:{ja:'',en:''},own:''});
+  renderDebug();renderTabs();flashSave();
+}
+
+// ============================================================
+// DEALS
+// ============================================================
+function renderDeals(){
+  const ja=lang==='ja';
+  document.getElementById('d-clients').textContent=dealData.length;
+  document.getElementById('d-urgent').textContent=dealData.filter(d=>d.urgent).length;
+  document.getElementById('d-eng-ng').textContent=dealData.filter(d=>!d.engOk).length;
+  document.getElementById('d-gantt-sync').textContent=dealData.filter(d=>d.startDate&&d.endDate).length;
+
+  const mx={uh:[],ul:[],lh:[],ll:[]};
+  dealData.forEach(d=>mx[(d.urgent?'u':'l')+(d.big?'h':'l')].push(d));
+  ['uh','ul','lh','ll'].forEach(k=>{
+    document.getElementById('mx-'+k).innerHTML=mx[k].map(d=>`<div class="deal-row"><span style="font-weight:500;flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.client}</span><span style="font-size:10px;color:var(--text2)">${d.value}</span>${d.startDate&&d.endDate?'<span class="pill p-done" style="font-size:9px">📅</span>':'<span class="pill p-wait" style="font-size:9px">'+(ja?'日付未設定':'No date')+'</span>'}</div>`).join('')
+      ||`<div style="font-size:11px;color:var(--text2);padding:3px 0">${ja?'案件なし':'None'}</div>`;
+  });
+
+  const heads=ja?['クライアント','案件名','規模','緊急','Eng確認','開始日 →ガント','終了日 →ガント','次のアクション','']:['Client','Deal Name','Scale','Urgent','Eng OK','Start →Gantt','End →Gantt','Next Action',''];
+  document.getElementById('deals-head').innerHTML=`<tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+
+  const tbody=document.getElementById('deals-tbody');
+  tbody.innerHTML='';
+  dealData.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    tr.appendChild(edCell(d.client, v=>{dealData[i].client=v;renderDeals();}));
+    tr.appendChild(edCell(d.name[lang]||'', v=>{dealData[i].name[lang]=v;}));
+    tr.appendChild(edCell(d.value||'', v=>{dealData[i].value=v;}));
+    tr.appendChild(selCell([[true,ja?'高':'High'],[false,ja?'低':'Low']], String(d.urgent), v=>{dealData[i].urgent=(v==='true');renderDeals();}));
+    // eng ok checkbox
+    const engTd=document.createElement('td');
+    const lbl=document.createElement('label');lbl.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px';
+    const chk=document.createElement('input');chk.type='checkbox';chk.checked=d.engOk;
+    chk.onchange=()=>{dealData[i].engOk=chk.checked;renderDeals();flashSave();};
+    lbl.appendChild(chk);lbl.appendChild(document.createTextNode(d.engOk?(ja?'済':'Done'):(ja?'未':'No')));
+    engTd.appendChild(lbl);tr.appendChild(engTd);
+    // start date → gantt
+    tr.appendChild(dateCell(d.startDate, v=>{
+      dealData[i].startDate=v;
+      renderDeals();
+      if(document.getElementById('panel-gantt').classList.contains('active')) renderGantt();
+    }));
+    // end date → gantt
+    tr.appendChild(dateCell(d.endDate, v=>{
+      dealData[i].endDate=v;
+      renderDeals();
+      if(document.getElementById('panel-gantt').classList.contains('active')) renderGantt();
+    }));
+    tr.appendChild(edCell(d.next[lang]||'', v=>{dealData[i].next[lang]=v;}));
+    tr.appendChild(delCell(()=>{dealData.splice(i,1);renderDeals();}));
+    tbody.appendChild(tr);
+  });
+}
+function addDealRow(){
+  dealData.push({id:'P'+Date.now(),client:'新規クライアント',name:{ja:'新規案件',en:'New deal'},value:'',urgent:false,big:false,engOk:false,startDate:'',endDate:'',next:{ja:'要確認',en:'TBD'}});
+  renderDeals();flashSave();
+}
+
+// ============================================================
+// GANTT — fully auto-generated from deals + debug
+// ============================================================
+function buildGanttFilter(){
+  const ja=lang==='ja';
+  const sel=document.getElementById('gantt-filter');
+  const groups=['all',...new Set(buildGanttRows().map(r=>r.group))];
+  sel.innerHTML=groups.map(g=>`<option value="${g}">${g==='all'?(ja?'全グループ':'All groups'):g}</option>`).join('');
+}
+
+function renderGantt(){
+  const ja=lang==='ja';
+  const filter=document.getElementById('gantt-filter').value;
+  const rows=buildGanttRows();
+  const filtered=filter==='all'?rows:rows.filter(r=>r.group===filter);
+
+  const ORIGIN=GANTT_ORIGIN;
+  // dynamic range: min 13 weeks, expand to cover all data
+  let maxWeek=13;
+  rows.forEach(r=>{ if(r.start+r.dur>maxWeek) maxWeek=r.start+r.dur+1; });
+  const WEEKS=maxWeek;
+  const COL=160, WW=38, RH=34, HH=32;
+  const todayX=Math.min(WEEKS*WW,Math.max(0,(Date.now()-ORIGIN)/(7*86400000)*WW));
+  const totalW=COL+WEEKS*WW;
+
+  // week labels
+  const wkLabels=Array.from({length:WEEKS},(_,i)=>{
+    const d=new Date(ORIGIN);d.setDate(d.getDate()+i*7);
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  });
+
+  let html=`<div style="min-width:${totalW}px;font-size:11px">`;
+  // header
+  html+=`<div style="display:grid;grid-template-columns:${COL}px repeat(${WEEKS},${WW}px);background:var(--bg2);border-bottom:0.5px solid var(--border2);height:${HH}px;position:sticky;top:0;z-index:3">`;
+  html+=`<div style="padding:0 12px;display:flex;align-items:center;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">${ja?'タスク':'Task'}</div>`;
+  wkLabels.forEach(wl=>{ html+=`<div style="display:flex;align-items:center;justify-content:center;color:var(--text2);border-left:0.5px solid var(--border);font-size:10px">${wl}</div>`; });
+  html+='</div>';
+
+  // group rows
+  const groups=[...new Set(filtered.map(r=>r.group))];
+  if(groups.length===0){
+    html+=`<div style="padding:24px;text-align:center;color:var(--text2);font-size:12px">${ja?'表示するデータがありません。案件優先度タブで開始日・終了日を設定してください。':'No data to display. Set start/end dates in the Deals tab.'}</div>`;
+  }
+
+  groups.forEach(grp=>{
+    const grpRows=filtered.filter(r=>r.group===grp);
+    const cc=CLIENT_COLORS[grp]||'#888780';
+    // group header
+    html+=`<div style="display:grid;grid-template-columns:${COL}px 1fr;min-height:26px;background:var(--bg2);border-bottom:0.5px solid var(--border)">`;
+    html+=`<div style="padding:0 12px;display:flex;align-items:center;grid-column:1/-1">`;
+    html+=`<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;background:${cc}15;color:${cc};border:0.5px solid ${cc}35">`;
+    html+=`<span style="width:6px;height:6px;border-radius:50%;background:${cc}"></span>${grp}</span></div></div>`;
+
+    grpRows.forEach(r=>{
+      const barL=Math.max(0,r.start)*WW;
+      const barW=Math.max(4,r.dur*WW-4);
+      const gridLines=Array.from({length:WEEKS},(_,i)=>`<div style="position:absolute;left:${i*WW}px;top:0;bottom:0;width:0.5px;background:var(--border)"></div>`).join('');
+      html+=`<div style="display:grid;grid-template-columns:${COL}px 1fr;min-height:${RH}px;border-bottom:0.5px solid var(--border);align-items:center">`;
+      html+=`<div style="padding:0 10px 0 16px;font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.label}">${r.label}</div>`;
+      html+=`<div style="position:relative;height:${RH}px;display:flex;align-items:center">`;
+      html+=gridLines;
+      html+=`<div style="position:absolute;left:${todayX}px;top:0;bottom:0;width:1.5px;background:var(--danger);opacity:.5;z-index:2"></div>`;
+      html+=`<div style="position:absolute;left:${barL+2}px;width:${barW}px;height:20px;border-radius:4px;background:${r.color};display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:500;color:#fff;overflow:hidden;white-space:nowrap;z-index:1;opacity:${r.status==='resolved'?0.5:1}">${r.label}</div>`;
+      html+=`</div></div>`;
+    });
+  });
+
+  html+='</div>';
+  document.getElementById('gantt-container').innerHTML=html;
+
+  // source info panel
+  const dealsWithDate=dealData.filter(d=>d.startDate&&d.endDate);
+  const debugWithDate=debugData.filter(d=>d.dead&&d.st!=='resolved');
+  document.getElementById('gantt-source-info').innerHTML=`
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;border:0.5px solid var(--border)">
+      <div style="font-weight:600;margin-bottom:4px;color:var(--accent)">📊 ${ja?'案件優先度':'Deals'}</div>
+      <div style="color:var(--text2)">${ja?`日付設定済み: ${dealsWithDate.length}件 / 全${dealData.length}件`:`${dealsWithDate.length} of ${dealData.length} deals with dates`}</div>
+      ${dealsWithDate.map(d=>`<div style="margin-top:3px;font-size:11px">・${d.client} — ${d.startDate} → ${d.endDate}</div>`).join('')}
+    </div>
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;border:0.5px solid var(--border)">
+      <div style="font-weight:600;margin-bottom:4px;color:var(--danger)">🐛 ${ja?'デバッグ':'Debug'}</div>
+      <div style="color:var(--text2)">${ja?`期日設定済みバグ: ${debugWithDate.length}件 (TODO)`:` ${debugWithDate.length} active bugs with deadlines`}</div>
+      ${[...new Set(debugWithDate.map(d=>d.dead))].map(dead=>{
+        const bugs=debugWithDate.filter(d=>d.dead===dead);
+        return `<div style="margin-top:3px;font-size:11px">・${dead} — ${bugs.length}${ja?'件':'bugs'} (${[...new Set(bugs.map(b=>b.prio))].join('/')})</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// TRANSLATOR
+// ============================================================
+function swapTl(){
+  tlSwapped=!tlSwapped;
+  const ja=lang==='ja';
+  document.getElementById('tl-from-lbl').textContent=tlSwapped?'English':(ja?'日本語':'Japanese');
+  document.getElementById('tl-to-lbl').textContent=tlSwapped?(ja?'日本語':'Japanese'):'English';
+  document.getElementById('tl-input').value='';
+  clearTlOut();
+}
+function clearTlOut(){
+  const el=document.getElementById('tl-output');
+  el.classList.add('empty');
+  el.textContent=lang==='ja'?'翻訳結果がここに表示されます…':'Translation appears here…';
+}
+function clearTl(){document.getElementById('tl-input').value='';clearTlOut();}
+async function runTl(){
+  const text=document.getElementById('tl-input').value.trim();if(!text)return;
+  const fromL=tlSwapped?'English':(lang==='ja'?'日本語':'Japanese');
+  const toL=tlSwapped?(lang==='ja'?'日本語':'Japanese'):'English';
+  document.getElementById('tl-spin').classList.remove('hidden');
+  const out=document.getElementById('tl-output');
+  out.classList.remove('empty');out.textContent=lang==='ja'?'翻訳中…':'Translating…';
+  const result=await callClaude(`You are a professional translator for a Japanese AI subtitle startup. Translate from ${fromL} to ${toL}. Preserve technical terms. Output translation only:\n\n${text}`);
+  document.getElementById('tl-spin').classList.add('hidden');
+  out.textContent=result;
+  tlHistory.unshift({from:text.slice(0,50)+(text.length>50?'…':''),to:result.slice(0,80)+(result.length>80?'…':''),dir:tlSwapped?'en-ja':'ja-en'});
+  renderTlHistory();
+}
+function renderTlHistory(){
+  const el=document.getElementById('tl-history');
+  if(!tlHistory.length){el.innerHTML=`<div style="font-size:12px;color:var(--text2)">${lang==='ja'?'翻訳履歴なし':'No history yet'}</div>`;return;}
+  el.innerHTML=tlHistory.slice(0,5).map(h=>`<div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border:0.5px solid var(--border)"><div style="font-size:10px;color:var(--text2);margin-bottom:3px">${h.dir==='ja-en'?'JA→EN':'EN→JA'}</div><div style="font-size:11px;color:var(--text2)">${h.from}</div><div style="font-size:11px;margin-top:2px">${h.to}</div></div>`).join('');
+}
+
+// ============================================================
+// CLAUDE API
+// ============================================================
+async function callClaude(prompt){
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();
+    return d.content?.find(c=>c.type==='text')?.text||'(error)';
+  }catch(e){return'(Network error)';}
+}
+
+// ============================================================
+// LOCALSTORAGE SAVE / LOAD + JSON EXPORT / IMPORT
+// ============================================================
+const LS_KEY = 'aidol_team_bridge_v1';
+
+function collectData(){
+  return { bridgeData, debugData, dealData, savedAt: new Date().toISOString() };
+}
+function applyData(d){
+  if(d.bridgeData){ bridgeData.length=0; d.bridgeData.forEach(x=>bridgeData.push(x)); }
+  if(d.debugData){  debugData.length=0;  d.debugData.forEach(x=>debugData.push(x)); }
+  if(d.dealData){   dealData.length=0;   d.dealData.forEach(x=>dealData.push(x)); }
+}
+function saveToLocal(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(collectData())); flashSave(); }
+  catch(e){ alert('保存エラー: '+e.message); }
+}
+function loadFromLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return false;
+    applyData(JSON.parse(raw));
+    return true;
+  } catch(e){ return false; }
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(collectData(),null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'aidol_bridge_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  flashSave();
+}
+function importJSON(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const d = JSON.parse(e.target.result);
+      applyData(d);
+      saveToLocal();
+      renderAll();
+      alert(lang==="ja"
+        ? "✅ インポート完了！\n保存日時: "+(d.savedAt||"不明")
+        : "✅ Import complete!\nSaved at: "+(d.savedAt||"unknown"));
+    } catch(err){ alert(lang==="ja"?"インポートエラー: ファイルが壊れている可能性があります":"Import error: file may be corrupted"); }
+  };
+  reader.readAsText(file);
+  input.value="";
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function renderAll(){
+  renderBridge();
+  buildDebugFilters(); renderDebug();
+  renderDeals();
+  buildGanttFilter(); renderGantt();
+  renderTlHistory();
+}
+loadFromLocal();
+renderTabs();
+applyI18n();
+renderAll();
+setInterval(saveToLocal, 60000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") saveToLocal(); });
+</script>
+</body>
+</html>
