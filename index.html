@@ -147,6 +147,19 @@ textarea:focus,select.fsel:focus,input.finput:focus{border-color:var(--accent)}
 .s-badge:hover{background:var(--bg3)}
 .s-div{font-size:10px;color:var(--text2);text-align:center;padding:3px 0;display:flex;align-items:center;gap:7px}
 .s-div::before,.s-div::after{content:'';flex:1;height:0.5px;background:var(--border)}
+
+/* CHANGELOG */
+.cl-entry{padding:10px 12px;border-bottom:0.5px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.cl-entry:last-child{border-bottom:none}
+.cl-entry:hover{background:var(--bg2)}
+.cl-hash{font-family:'SF Mono',Consolas,monospace;font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;flex-shrink:0}
+.cl-hash:hover{text-decoration:underline}
+.cl-msg{font-size:12px;line-height:1.5;flex:1}
+.cl-msg-title{font-weight:600}
+.cl-msg-body{color:var(--text2);margin-top:2px;white-space:pre-line}
+.cl-meta{font-size:10px;color:var(--text2);white-space:nowrap;flex-shrink:0;text-align:right;min-width:90px}
+.cl-author{font-weight:500;color:var(--text)}
+.cl-date-sep{font-size:11px;font-weight:600;color:var(--text2);padding:8px 12px;background:var(--bg2);border-bottom:0.5px solid var(--border)}
 </style>
 </head>
 <body>
@@ -335,6 +348,19 @@ textarea:focus,select.fsel:focus,input.finput:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- CHANGELOG -->
+<div class="panel" id="panel-changelog">
+  <div class="card">
+    <div class="card-hd">
+      <span id="cl-title">コミット履歴</span>
+      <button class="btn" style="font-size:11px;padding:3px 10px" onclick="clData=null;loadCommits()">↻</button>
+    </div>
+    <div id="cl-loading" style="font-size:12px;color:var(--text2);padding:10px 0">読み込み中…</div>
+    <div id="cl-list" style="display:flex;flex-direction:column;gap:0"></div>
+    <div id="cl-empty" style="display:none;font-size:12px;color:var(--text2);padding:10px 0">コミットが見つかりません</div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // DATA
@@ -460,10 +486,10 @@ function flashSync(){
 // ============================================================
 // TABS
 // ============================================================
-const TABS_ID = ['bridge','debug','deals','gantt','translate'];
+const TABS_ID = ['bridge','debug','deals','gantt','translate','changelog'];
 const TABS_LABEL = {
-  ja: ['Bridge','デバッグ','案件優先度','ガントチャート','翻訳・Slack'],
-  en: ['Bridge','Bugs','Deals','Gantt Chart','Translate/Slack'],
+  ja: ['Bridge','デバッグ','案件優先度','ガントチャート','翻訳・Slack','更新履歴'],
+  en: ['Bridge','Bugs','Deals','Gantt Chart','Translate/Slack','Changelog'],
 };
 
 function renderTabs(){
@@ -479,6 +505,7 @@ function showTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='gantt'){ flashSync(); renderGantt(); }
+  if(id==='changelog'){ loadCommits(); }
   renderTabs();
 }
 
@@ -564,6 +591,9 @@ function applyI18n(){
   document.getElementById('tl-hist-title').textContent = ja?'翻訳履歴':'Translation history';
   document.getElementById('slack-title').textContent = ja?'Slack通知イメージ':'Slack Notification Preview';
   document.getElementById('slack-sub').textContent = ja?'このアプリからSlackに自動通知するとこんなイメージです':'How auto-notifications would appear in Slack';
+  document.getElementById('cl-title').textContent = ja?'コミット履歴':'Commit History';
+  document.getElementById('cl-loading').textContent = ja?'読み込み中…':'Loading…';
+  document.getElementById('cl-empty').textContent = ja?'コミットが見つかりません':'No commits found';
   renderTabs();
 }
 
@@ -988,6 +1018,75 @@ applyI18n();
 renderAll();
 setInterval(saveToLocal, 60000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") saveToLocal(); });
+
+// ============================================================
+// CHANGELOG
+// ============================================================
+function clEsc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatCommitMsg(msg){
+  const lines = msg.split('\n');
+  const title = lines[0];
+  const body = lines.slice(1).join('\n').trim();
+  let html = `<div class="cl-msg-title">${clEsc(title)}</div>`;
+  if(body) html += `<div class="cl-msg-body">${clEsc(body)}</div>`;
+  return html;
+}
+
+function renderCommits(commits){
+  const list = document.getElementById('cl-list');
+  const empty = document.getElementById('cl-empty');
+  const loading = document.getElementById('cl-loading');
+  loading.style.display = 'none';
+  list.innerHTML = '';
+  if(!commits.length){ empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  let lastDate = '';
+  commits.forEach(c => {
+    const date = c.date.split('T')[0];
+    if(date !== lastDate){
+      lastDate = date;
+      const d = new Date(date);
+      const dateStr = d.toLocaleDateString(lang==='ja'?'ja-JP':'en-US',{year:'numeric',month:'short',day:'numeric',weekday:'short'});
+      const sep = document.createElement('div');
+      sep.className = 'cl-date-sep';
+      sep.textContent = dateStr;
+      list.appendChild(sep);
+    }
+    const el = document.createElement('div');
+    el.className = 'cl-entry';
+    const time = new Date(c.date).toLocaleTimeString(lang==='ja'?'ja-JP':'en-US',{hour:'2-digit',minute:'2-digit'});
+    el.innerHTML = `
+      <span class="cl-hash">${c.sha}</span>
+      <div class="cl-msg">${formatCommitMsg(c.message)}</div>
+      <div class="cl-meta"><div class="cl-author">${clEsc(c.author)}</div><div>${time}</div></div>`;
+    list.appendChild(el);
+  });
+}
+
+let clData = null;
+async function loadCommits(){
+  const list = document.getElementById('cl-list');
+  const loading = document.getElementById('cl-loading');
+  const empty = document.getElementById('cl-empty');
+
+  if(clData){ renderCommits(clData); return; }
+
+  loading.style.display = 'block';
+  list.innerHTML = '';
+  empty.style.display = 'none';
+
+  try{
+    const res = await fetch('changelog.json');
+    clData = await res.json();
+    renderCommits(clData);
+  }catch(e){
+    loading.style.display = 'none';
+    empty.style.display = 'block';
+    console.error('Failed to load changelog:', e);
+  }
+}
 </script>
 </body>
 </html>
