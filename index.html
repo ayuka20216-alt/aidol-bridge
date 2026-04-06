@@ -348,6 +348,59 @@ textarea:focus,select.fsel:focus,input.finput:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- FEATURES -->
+<div class="panel" id="panel-features">
+  <div class="card">
+    <div class="card-hd"><span id="ft-overview-title">システム概要</span></div>
+    <div id="ft-overview-body" style="font-size:12px;line-height:1.8;color:var(--text)">
+      <p>AIdol Subtitleは、日本語の音声をリアルタイムで文字起こし・翻訳する配信用字幕アプリです。</p>
+      <p style="margin-top:6px">音声 → Whisper ASR（文字起こし） → 校正LLM（誤認識修正） → 翻訳LLM（英訳） → 画面表示</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span id="ft-pipeline-title">処理パイプライン</span></div>
+    <pre id="ft-pipeline-diagram" style="font-size:11px;line-height:1.6;overflow-x:auto;padding:8px;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);color:var(--text)"></pre>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span id="ft-config-title">プロファイル設定ファイル</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px" id="ft-config-sub">各ゲームプロファイルは <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">prompts/&lt;プロファイル名&gt;/</code> に5つのファイルで構成されています。管理画面でプロファイルを切り替えると即座にホットスワップされます。</div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="ft-config-table">
+        <thead>
+          <tr><th id="ft-th-file">ファイル</th><th id="ft-th-type">種類</th><th id="ft-th-desc">説明</th></tr>
+        </thead>
+        <tbody id="ft-config-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span id="ft-profiles-title">利用可能なプロファイル</span></div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th id="ft-th-profile">プロファイル</th><th id="ft-th-game">ゲーム</th><th id="ft-th-notes">備考</th></tr></thead>
+        <tbody>
+          <tr><td><code>mh</code></td><td id="ft-game-mh">Monster Hunter</td><td id="ft-notes-mh">モンスター名・装備名の校正と翻訳</td></tr>
+          <tr><td><code>yakuza</code></td><td id="ft-game-yk">Yakuza Kiwami 3</td><td id="ft-notes-yk">キャラ名・組織名・地名（30以上の固有名詞）</td></tr>
+          <tr><td><code>tekken</code></td><td id="ft-game-tk">Tekken 8</td><td id="ft-notes-tk">キャラ名・技名・格ゲー用語（フレームデータ対応）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><span id="ft-admin-title">管理画面の機能</span></div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th id="ft-th-feature">機能</th><th id="ft-th-fdesc">説明</th></tr></thead>
+        <tbody id="ft-admin-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGELOG -->
 <div class="panel" id="panel-changelog">
   <div class="card">
@@ -486,10 +539,10 @@ function flashSync(){
 // ============================================================
 // TABS
 // ============================================================
-const TABS_ID = ['bridge','debug','deals','gantt','translate','changelog'];
+const TABS_ID = ['bridge','debug','deals','gantt','translate','features','changelog'];
 const TABS_LABEL = {
-  ja: ['Bridge','デバッグ','案件優先度','ガントチャート','翻訳・Slack','更新履歴'],
-  en: ['Bridge','Bugs','Deals','Gantt Chart','Translate/Slack','Changelog'],
+  ja: ['Bridge','デバッグ','案件優先度','ガントチャート','翻訳・Slack','機能説明','更新履歴'],
+  en: ['Bridge','Bugs','Deals','Gantt Chart','Translate/Slack','Features','Changelog'],
 };
 
 function renderTabs(){
@@ -594,7 +647,62 @@ function applyI18n(){
   document.getElementById('cl-title').textContent = ja?'コミット履歴':'Commit History';
   document.getElementById('cl-loading').textContent = ja?'読み込み中…':'Loading…';
   document.getElementById('cl-empty').textContent = ja?'コミットが見つかりません':'No commits found';
+  // Features tab
+  document.getElementById('ft-overview-title').textContent = ja?'システム概要':'System Overview';
+  document.getElementById('ft-overview-body').innerHTML = ja
+    ? '<p>AIdol Subtitleは、日本語の音声をリアルタイムで文字起こし・翻訳する配信用字幕アプリです。</p><p style="margin-top:6px">音声 → Whisper ASR（文字起こし） → 校正LLM（誤認識修正） → 翻訳LLM（英訳） → 画面表示</p>'
+    : '<p>AIdol Subtitle is a live-streaming subtitle app that transcribes Japanese speech and translates it to English in real-time.</p><p style="margin-top:6px">Audio → Whisper ASR (transcription) → Correction LLM (fix misrecognitions) → Translation LLM (JP→EN) → Display</p>';
+  document.getElementById('ft-pipeline-title').textContent = ja?'処理パイプライン':'Processing Pipeline';
+  document.getElementById('ft-pipeline-diagram').textContent = ja
+    ? 'マイク音声 → [無音判定] → Whisper ASR → correction_prompt → translation_prompt → 画面表示\n                                              ↓                     ↓\n                                     move_dictionary         keywords.json\n                                     （技名ハイライト）       （用語説明表示）\n\n                              hint_prompt ← 直近の文字起こし（15秒間隔）'
+    : 'Mic Audio → [Silence Gate] → Whisper ASR → correction_prompt → translation_prompt → Display\n                                              ↓                     ↓\n                                     move_dictionary         keywords.json\n                                     (move highlighting)     (term descriptions)\n\n                              hint_prompt ← recent transcript context (every 15s)';
+  document.getElementById('ft-config-title').textContent = ja?'プロファイル設定ファイル':'Profile Configuration Files';
+  document.getElementById('ft-config-sub').innerHTML = ja
+    ? '各ゲームプロファイルは <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">prompts/&lt;プロファイル名&gt;/</code> に5つのファイルで構成されています。管理画面でプロファイルを切り替えると即座にホットスワップされます。'
+    : 'Each game profile lives in <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">prompts/&lt;profile&gt;/</code> and contains 5 files. These are hot-swapped when you switch profiles in the admin UI.';
+  document.getElementById('ft-th-file').textContent = ja?'ファイル':'File';
+  document.getElementById('ft-th-type').textContent = ja?'種類':'Type';
+  document.getElementById('ft-th-desc').textContent = ja?'説明':'Description';
+  document.getElementById('ft-profiles-title').textContent = ja?'利用可能なプロファイル':'Available Profiles';
+  document.getElementById('ft-th-profile').textContent = ja?'プロファイル':'Profile';
+  document.getElementById('ft-th-game').textContent = ja?'ゲーム':'Game';
+  document.getElementById('ft-th-notes').textContent = ja?'備考':'Notes';
+  document.getElementById('ft-notes-mh').textContent = ja?'モンスター名・装備名の校正と翻訳':'Monster/equipment name correction & translation';
+  document.getElementById('ft-notes-yk').textContent = ja?'キャラ名・組織名・地名（30以上の固有名詞）':'Character/faction/location names (30+ proper nouns)';
+  document.getElementById('ft-notes-tk').textContent = ja?'キャラ名・技名・格ゲー用語（フレームデータ対応）':'Character/move names, FGC terms (frame data hints)';
+  document.getElementById('ft-admin-title').textContent = ja?'管理画面の機能':'Admin Panel Features';
+  document.getElementById('ft-th-feature').textContent = ja?'機能':'Feature';
+  document.getElementById('ft-th-fdesc').textContent = ja?'説明':'Description';
+  renderFeaturesData();
   renderTabs();
+}
+
+function renderFeaturesData(){
+  const ja = lang==='ja';
+  const configData = [
+    ['correction_prompt.txt', ja?'LLMプロンプト':'LLM Prompt', ja?'校正LLMのシステムプロンプト。Whisperが誤認識しやすいゲーム用語（キャラ名・技名・地名）を読み仮名付きの用語リストで修正します。生の日本語ASR出力を受け取り、校正済みの日本語を返します。':'System prompt for the correction LLM. Fixes ASR misrecognitions of game terms (character names, moves, locations) using a term list with phonetic readings. Receives raw Japanese ASR output, returns corrected Japanese.'],
+    ['translation_prompt.txt', ja?'LLMプロンプト':'LLM Prompt', ja?'翻訳LLMのシステムプロンプト。校正済みの日本語を受け取り英語に翻訳します。固有名詞の一貫性のため「日本語=English」の用語マッピング表を含みます。':'System prompt for the translation LLM. Receives corrected Japanese and translates to English. Contains a term mapping table (Japanese=English) for consistent proper noun translation.'],
+    ['hint_prompt.txt', ja?'LLMプロンプト':'LLM Prompt', ja?'ヒントLLMのシステムプロンプト。15秒間隔で両チャンネルの直近のトランスクリプトを受け取り、会話内容に関連するゲームのヒントを生成します。{CONTEXT}がトランスクリプト挿入位置です。':'System prompt for the hint LLM. Runs every 15s, receives recent transcript context from both channels, generates a brief gameplay tip. {CONTEXT} is the placeholder for transcript injection.'],
+    ['keywords.json', ja?'設定ファイル':'Config', ja?'キーワード検出の設定。日本語/英語テキストにキーワードが出現するとツールチップで説明が表示されます。各キーワードにdescription・type・priorityがあります。':'Keyword detection config. When a keyword appears in text, its description shows as a tooltip. Each keyword has description, type, and priority fields.'],
+    ['move_dictionary_short.txt', ja?'辞書ファイル':'Dictionary', ja?'技名ハイライト用辞書。1行1エントリ「日本語 English」形式。校正テキストに技名が含まれるとUIでハイライト表示されます。':'Move/term highlighting dictionary. One entry per line: "Japanese English". When a term appears in corrected text, it gets highlighted in the UI.'],
+  ];
+  const tbody = document.getElementById('ft-config-tbody');
+  tbody.innerHTML = configData.map(r =>
+    `<tr><td><code style="background:var(--bg2);padding:1px 5px;border-radius:3px;font-size:11px">${r[0]}</code></td><td><span style="font-size:11px">${r[1]}</span></td><td>${r[2]}</td></tr>`
+  ).join('');
+
+  const adminData = [
+    [ja?'プロファイル切替':'Profile Switch', ja?'ゲームプロファイルをドロップダウンで即座に切替。全プロンプト・辞書・キーワードがホットスワップされます。':'Switch game profiles instantly via dropdown. All prompts, dictionaries, and keywords are hot-swapped.'],
+    [ja?'無音閾値':'Silence Threshold', ja?'チャンネルごとにスライダーで調整可能。設定値以下の音量はASRに送信されず、API呼び出しを節約します。設定はサーバー再起動後も保持されます。':'Adjustable per-channel via slider. Audio below the threshold skips ASR, saving API calls. Setting persists across server restarts.'],
+    [ja?'翻訳/遅延/ヒント':'Translation/Delay/Hints', ja?'翻訳のON/OFF、表示遅延（0〜15秒）、ヒント生成の切替が可能です。':'Toggle translation on/off, display delay (0-15s), and hint generation.'],
+    [ja?'LLMデバッグパネル':'LLM Debug Panel', ja?'全てのAPI呼び出し（ASR・校正・翻訳・ヒント）をリアルタイムで表示。チャンネル別フィルター・システムプロンプト・完全なメッセージ履歴を確認できます。':'Shows all API calls (ASR, correction, translation, hint) in real-time. Filter by channel, view system prompts and full message history.'],
+    [ja?'チャットログ':'Chat Log', ja?'全ての字幕エントリをタイムライン表示。ASR原文→校正→翻訳の差分が確認でき、デバッグ音声の再生・ダウンロードも可能です。':'Timeline of all subtitle entries showing raw ASR → correction → translation diffs. Play/download debug audio for each entry.'],
+    [ja?'音声レベルメーター':'Audio Level Meter', ja?'各チャンネルのリアルタイム音声レベルと無音閾値マーカーを表示。閾値以下の音声はグレー表示になります。':'Real-time audio level per channel with threshold marker. Audio below threshold shows as grey.'],
+  ];
+  const aTbody = document.getElementById('ft-admin-tbody');
+  aTbody.innerHTML = adminData.map(r =>
+    `<tr><td style="white-space:nowrap;font-weight:500">${r[0]}</td><td>${r[1]}</td></tr>`
+  ).join('');
 }
 
 // ============================================================
