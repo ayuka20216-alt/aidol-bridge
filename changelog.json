@@ -1,4 +1,6 @@
 [
+  {"sha":"ae2e86e","message":"add tekken game profile","author":"mekatek","date":"2026-04-07T09:08:12+09:00"},
+  {"sha":"0bc045d","message":"settings export/import/reset with JSON save and load from admin UI","author":"mekatek","date":"2026-04-07T08:50:01+09:00"},
   {"sha":"0ce76a8","message":"debug tooling, silence gate, race condition fix, and channel labels","author":"mekatek","date":"2026-04-04T19:19:10+09:00"},
   {"sha":"b2aa66d","message":"game profile selector with hot-swap and yakuza config","author":"mekatek","date":"2026-04-01T11:34:54+09:00"},
   {"sha":"2aa0141","message":"add expandable status key with EN/JP explanations","author":"mekatek","date":"2026-04-01T01:00:34+09:00"},
